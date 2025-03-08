@@ -38,7 +38,7 @@ app.post("/callback", line.middleware(config), (req, res) => {
 });
 
 // event handler
-function handleEvent(event) {
+async function handleEvent(event) {
   if (event.type !== "message" || event.message.type !== "text") {
     // ignore non-text-message event
     return Promise.resolve(null);
@@ -50,7 +50,7 @@ function handleEvent(event) {
       messages: [text],
       thread_id: `line-${CHANNEL_ID}`,
     };
-    const response = engine_client.request({
+    const response = await engine_client.request({
       url: `${ENGINE_URL}/messages`,
       method: "POST",
       data: requestBody,
