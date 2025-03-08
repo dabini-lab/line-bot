@@ -1,8 +1,11 @@
 import * as line from "@line/bot-sdk";
 import express from "express";
 import dotenv from "dotenv";
+import { GoogleAuth } from "google-auth-library";
 
 dotenv.config();
+
+const CHANNEL_ID = process.env.CHANNEL_ID;
 
 // create LINE SDK config from env variables
 const config = {
@@ -13,6 +16,11 @@ const config = {
 const client = new line.messagingApi.MessagingApiClient({
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
 });
+
+// dabini engine
+const ENGINE_URL = process.env.ENGINE_URL;
+const auth = new GoogleAuth();
+const engine_client = await auth.getIdTokenClient(ENGINE_URL);
 
 // create Express app
 // about Express itself: https://expressjs.com/
@@ -36,14 +44,25 @@ function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  // create an echoing text message
-  const echo = { type: "text", text: event.message.text };
+  const text = event.message.text || "";
+  if (text.includes("다빈")) {
+    const requestBody = {
+      messages: [text],
+      thread_id: `line-${CHANNEL_ID}`,
+    };
+    const response = engine_client.request({
+      url: `${ENGINE_URL}/messages`,
+      method: "POST",
+      data: requestBody,
+    });
+    const reply = { type: "text", text: response.data.response.content };
 
-  // use reply API
-  return client.replyMessage({
-    replyToken: event.replyToken,
-    messages: [echo],
-  });
+    // use reply API
+    return client.replyMessage({
+      replyToken: event.replyToken,
+      messages: [reply],
+    });
+  }
 }
 
 // listen on port
