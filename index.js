@@ -46,9 +46,13 @@ async function handleEvent(event) {
 
   const text = event.message.text || "";
   if (text.includes("다빈")) {
+    // Get user profile to use as speaker name
+    const userProfile = await client.getProfile(event.source.userId);
+
     const requestBody = {
       messages: [text],
-      thread_id: `line-${CHANNEL_ID}`,
+      session_id: `line-${CHANNEL_ID}`,
+      speaker_name: userProfile.displayName,
     };
     const response = await engine_client.request({
       url: `${ENGINE_URL}/messages`,
