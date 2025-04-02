@@ -47,12 +47,27 @@ async function handleEvent(event) {
   const text = event.message.text || "";
   if (text.includes("다빈")) {
     // Get user profile to use as speaker name
-    const userProfile = await client.getProfile(event.source.userId);
+    const userId = event.source.userId;
+    let userProfile = null;
+    try {
+      if (userId) {
+        userProfile = await client.getProfile(userId);
+        console.log("User profile for userId", userId, "retrieved successfully.");
+      } else {
+        console.error("User ID not found in event source.");
+      }
+    } catch (error) {
+      if (error.statusCode === 404) {
+        console.error(`User profile not found for userId ${userId}:`, error);
+      } else {
+        console.error("Error fetching user profile:", error);
+      }
+    }
 
     const requestBody = {
       messages: [text],
       session_id: `line-${CHANNEL_ID}`,
-      speaker_name: userProfile.displayName,
+      speaker_name: userProfile ? userProfile.displayName : null,
     };
     const response = await engine_client.request({
       url: `${ENGINE_URL}/messages`,
