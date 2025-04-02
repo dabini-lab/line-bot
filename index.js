@@ -52,7 +52,7 @@ async function handleEvent(event) {
     try {
       if (userId) {
         userProfile = await client.getProfile(userId);
-        console.log("User profile:", userProfile.displayName);
+        console.log("User profile for userId", userId, "retrieved successfully.");
       } else {
         console.error("User ID not found in event source.");
       }
