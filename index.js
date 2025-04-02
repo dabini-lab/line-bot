@@ -48,9 +48,10 @@ async function handleEvent(event) {
   if (text.includes("다빈")) {
     // Get user profile to use as speaker name
     const userId = event.source.userId;
+    let userProfile = null;
     try {
       if (userId) {
-        const userProfile = await client.getProfile(userId);
+        userProfile = await client.getProfile(userId);
         console.log("User profile:", userProfile.displayName);
       } else {
         console.error("User ID not found in event source.");
@@ -66,7 +67,7 @@ async function handleEvent(event) {
     const requestBody = {
       messages: [text],
       session_id: `line-${CHANNEL_ID}`,
-      speaker_name: userProfile.displayName || null,
+      speaker_name: userProfile ? userProfile.displayName : null,
     };
     const response = await engine_client.request({
       url: `${ENGINE_URL}/messages`,
