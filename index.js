@@ -47,13 +47,9 @@ async function handleEvent(event) {
 
   const message = event.message;
   const text = message.text || "";
-  // Check if the bot is mentioned in the message
-  const isBotMentioned =
-    message.mention &&
-    message.mention.mentionees &&
-    message.mention.mentionees.some(
-      (mentionee) => mentionee.userId === CHANNEL_ID
-    );
+
+  // Use the function to check if the bot is mentioned
+  const isBotMentioned = checkBotMention(message, event, text, CHANNEL_ID);
 
   if (isBotMentioned) {
     // Get user profile to use as speaker name
@@ -108,6 +104,41 @@ async function handleEvent(event) {
   }
   // Handle cases where the bot is not mentioned
   return Promise.resolve(null);
+}
+
+/**
+ * Determines if the bot is mentioned in a message
+ * @param {Object} message - The message object
+ * @param {Object} event - The event object
+ * @param {string} text - The message text
+ * @param {string} channelId - The bot's channel ID
+ * @return {boolean} - Whether the bot is mentioned
+ */
+function checkBotMention(message, event, text, channelId) {
+  let isBotMentioned = false;
+
+  // Method 1: Check explicit mentions via mentionees
+  if (message.mention && message.mention.mentionees) {
+    console.log("Mention data:", JSON.stringify(message.mention, null, 2));
+    isBotMentioned = message.mention.mentionees.some(
+      (mentionee) => mentionee.userId === channelId
+    );
+  }
+
+  // Method 2: Check if it's a direct message in 1:1 chat
+  if (!isBotMentioned && event.source.type === "user") {
+    isBotMentioned = true;
+  }
+
+  // Method 3: Check if message starts with @bot or similar pattern
+  if (
+    !isBotMentioned &&
+    (text.startsWith("@") || text.toLowerCase().includes("다빈"))
+  ) {
+    isBotMentioned = true;
+  }
+
+  return isBotMentioned;
 }
 
 // listen on port
