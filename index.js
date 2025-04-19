@@ -10,6 +10,7 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 // create LINE SDK config from env variables
 const config = {
   channelSecret: process.env.CHANNEL_SECRET,
+  maxReplyMessages: 5, // Add the message limit here
 };
 
 // create LINE SDK client
@@ -44,15 +45,23 @@ async function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  const text = event.message.text || "";
-  if (text.includes("다빈")) {
+  const message = event.message;
+  const text = message.text || "";
+  // Check if the bot is mentioned in the message
+  const isBotMentioned =
+    message.mention &&
+    message.mention.mentionees &&
+    message.mention.mentionees.some(
+      (mentionee) => mentionee.userId === CHANNEL_ID
+    );
+
+  if (isBotMentioned) {
     // Get user profile to use as speaker name
     const userId = event.source.userId;
     let userProfile = null;
     try {
       if (userId) {
         userProfile = await client.getProfile(userId);
-        console.log("User profile for userId", userId, "retrieved successfully.");
       } else {
         console.error("User ID not found in event source.");
       }
@@ -74,14 +83,31 @@ async function handleEvent(event) {
       method: "POST",
       data: requestBody,
     });
-    const reply = { type: "text", text: response.data.response.content };
 
-    // use reply API
-    return client.replyMessage({
-      replyToken: event.replyToken,
-      messages: [reply],
-    });
+    const messages = response.data.messages;
+    // Limit the number of messages based on config
+    const limitedMessages = messages.slice(0, config.maxReplyMessages);
+
+    // Map the limited messages to the LINE reply format
+    const replies = limitedMessages.map((message) => ({
+      type: "text",
+      text: message,
+    }));
+
+    // Check if there are any replies to send
+    if (replies.length > 0) {
+      // use reply API to send all limited messages at once
+      return client.replyMessage({
+        replyToken: event.replyToken,
+        messages: replies,
+      });
+    } else {
+      // No messages to send back
+      return Promise.resolve(null);
+    }
   }
+  // Handle cases where the bot is not mentioned
+  return Promise.resolve(null);
 }
 
 // listen on port
